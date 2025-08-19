@@ -31,6 +31,17 @@ df %>%
   distinct() -> tab_year_study
 
 tab_year_study %>% 
+  dplyr::group_by(Title) %>% 
+  summarise(year_study_start = min(year_study_start_new, na.rm = T),
+            year_study_end = max(year_study_end_new, na.rm = T)) %>% 
+  mutate(year_study = year(year_study_end)) -> tab_year_study_to_merge
+
+write_rds(tab_year_study_to_merge, "study_by_year.rds")
+
+df %>% 
+  dplyr::filter(Title == "A seroepidemiological survey of Crimean Congo hemorrhagic fever among cattle in North Kordufan State, Sudan") %>% View()
+
+tab_year_study %>% 
   .[complete.cases(.),] %>% 
   rowwise() %>% 
   mutate(date = list(seq(year_study_start_new,

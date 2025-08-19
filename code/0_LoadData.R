@@ -4,6 +4,8 @@ require(tidytext)
 require(magrittr)
 
 df <- read_xlsx("data/CCHF data_2.xlsx")
+study_by_year <- read_rds("data/study_by_year.rds")
+study_by_year <- read_rds("data/df_geocoded.rds")
 
 # categorise studies based on the species they look at
 top_hitter_1 <- tibble(text = df$`Target species`) %>% 
@@ -30,8 +32,48 @@ for(i in 1:length(top_hitter)){
     as.numeric
 }
 
-df %<>% 
+df %>% 
   mutate(total_animals = rowSums(across(all_of(top_hitter)))) %>% 
   rename(year_pub = `Year of publication`,
          year_study = `Study period`) 
 
+df[,"iso3"] <- countrycode(df$`Study (country)`, "country.name", "iso3c")
+df[,"continent"] <- countrycode(df$`Study (country)`, "country.name", "continent")
+
+df %<>%
+  mutate(prop = Numerator / Denominator) %>%
+  rowwise() %>%
+  mutate(ci = list(binom::binom.wilson(Numerator, Denominator, conf.level = 0.95))) %>%
+  unnest_wider(ci)
+
+df %>% 
+  
+
+sero %>% 
+  dplyr::filter(cattle == 1) %>% 
+  rownames_to_column(var = "id") %>% 
+  ggplot(., (aes(x = id, y = mean, color = `Risk of bias`))) +
+  geom_point() +
+  geom_segment(aes(y = lower, yend = upper, x = id, xend = id)) +
+  facet_wrap(~`Risk of bias`)
+
+
+
+require(meta)
+m1 <- metaprop(
+  event = Numerator,
+  n = Denominator,
+  studlab = `Title`,
+  data = sero %>% dplyr::filter(sheep == 1, !is.na(continent)),
+  sm = "PLOGIT",     # logit transformed proportions
+  method.ci = "WS", # CI method for individual studies
+  comb.fixed = FALSE,   # random effects model
+  comb.random = TRUE,
+  method.tau = "ML",  # DerSimonian-Laird tau^2 estimator
+  subgroup = `Study (country)`, 
+  hakn = TRUE           # Hartung-Knapp adjustment
+)
+
+
+forest(m1)
+summary(m1)
