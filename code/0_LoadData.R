@@ -1,7 +1,5 @@
-require(readxl)
-require(tidyverse)
-require(tidytext)
-require(magrittr)
+if(!require(pacman)) install.packages("pacman")
+p_load(readxl, tidyverse, tidytext, magrittr, countrycode, meta)
 
 df <- read_xlsx("data/CCHF data_2.xlsx")
 study_by_year <- read_rds("data/study_by_year.rds")
@@ -46,12 +44,12 @@ df %<>%
   mutate(ci = list(binom::binom.wilson(Numerator, Denominator, conf.level = 0.95))) %>%
   unnest_wider(ci)
 
-df %>% 
-  
-
-sero %>% 
-  dplyr::filter(cattle == 1) %>% 
-  rownames_to_column(var = "id") %>% 
+# df %>% 
+#   
+# 
+df %>%
+  dplyr::filter(cattle == 1) %>%
+  rownames_to_column(var = "id") %>%
   ggplot(., (aes(x = id, y = mean, color = `Risk of bias`))) +
   geom_point() +
   geom_segment(aes(y = lower, yend = upper, x = id, xend = id)) +
@@ -60,20 +58,23 @@ sero %>%
 
 
 require(meta)
+
 m1 <- metaprop(
   event = Numerator,
   n = Denominator,
-  studlab = `Title`,
-  data = sero %>% dplyr::filter(sheep == 1, !is.na(continent)),
+  studlab = `First author`,
+  data = df %>% dplyr::filter(cattle == 1, !is.na(continent)),
   sm = "PLOGIT",     # logit transformed proportions
   method.ci = "WS", # CI method for individual studies
   comb.fixed = FALSE,   # random effects model
   comb.random = TRUE,
   method.tau = "ML",  # DerSimonian-Laird tau^2 estimator
-  subgroup = `Study (country)`, 
+  subgroup = `continent`, 
   hakn = TRUE           # Hartung-Knapp adjustment
 )
 
-
 forest(m1)
 summary(m1)
+
+m1_reg <- metareg(m1, ~ year)
+summary(m1_reg)
