@@ -1,4 +1,4 @@
-species_inuse <- "cattle"
+species_inuse <- "camel"
 
 tab <- df %>% 
   dplyr::filter(.data[[species_inuse]] == 1) %>% 
@@ -53,8 +53,11 @@ write_csv(coef_rob, paste0("results/coefficients_robust_", species_inuse, ".csv"
 write_csv(glance_tbl, paste0("results/diagnostics_", species_inuse, ".csv"))
 
 # pooled prediction
+if(species_inuse == "camel") continents_to_create <- c("Africa", "Asia")
+if(species_inuse != "camel") continents_to_create <- c("Africa", "Asia", "Europe")
+
 newdat <- expand.grid(
-  continent = unique(dat$continent),
+  continent = continents_to_create,
   year      = median(dat$year, na.rm = TRUE),
   bias1     = 0,
   bias2     = 0)
@@ -74,4 +77,4 @@ pred_df <- data.frame(
 
 write_csv(pred_df, paste0("results/prediction_interval_overall_", species_inuse, ".csv"))
 write_csv(pred_cont, paste0("results/prediction_interval_bycontinent_", species_inuse, ".csv"))
-
+write_rds(res, paste0("results/output_", species_inuse, ".rds"))
