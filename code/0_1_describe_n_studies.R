@@ -62,3 +62,35 @@ count_studies %>%
 ggsave("figures/n_studies.png",
        p,
        width = 10, height = 10)
+
+
+df %>% 
+  dplyr::select(Title, continent, Denominator, year_study_start, cattle, sheep, goat, camel) %>% 
+  mutate(year = year(year_study_start),
+         others = if_else(cattle == 0 & sheep == 0 & goat == 0 & camel == 0, 1, 0)) %>% 
+  pivot_longer(cols = c("sheep", "goat", "camel", "cattle", "others"),
+               names_to = "species") %>%
+  mutate(species = factor(species,
+                          levels = tags_species$species,
+                          labels = tags_species$labels)) %>% 
+  dplyr::filter(value != 0) %>% 
+  group_by(continent, species, year) %>% 
+  summarise(tot = sum(Denominator)) -> tab
+
+tab %>% 
+  dplyr::filter(!is.na(continent)) %>% 
+  ggplot(., aes(x = year, y = tot, group = species, color = species, fill = species)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~continent, ncol = 1) +
+  theme(axis.text = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        strip.text = element_text(size = 16),
+        legend.position = "top") +
+  labs(x = "Year", y = "Samples taken", color = "Species", fill = "Species") +
+  theme_bw() +
+  ggsci::scale_color_jama() +
+  ggsci::scale_fill_jama()
+
+ggsave("figures/n_samples.png",
+       width = 6, height = 10)
+
