@@ -1,5 +1,5 @@
 if(!require(pacman)) install.packages("pacman")
-p_load(readxl, tidyverse, tidytext, magrittr, countrycode, meta)
+p_load(readxl, tidyverse, tidytext, magrittr, countrycode, meta, metafor)
 
 df <- read_xlsx("data/CCHF data_2 (1).xlsx", sheet = "Data")
 
